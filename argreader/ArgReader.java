@@ -13,9 +13,9 @@ public class ArgReader {
 		requiredArgs = new HashMap<>();
 	}
 
-	public void addArg(String flag, boolean required,  ArgFunction arg) {
+	public void addArg(String flag, boolean required, ArgFunction arg) {
 		argMap.put(flag, arg);
-		requiredArgs.put(flag, false);
+		if (required) requiredArgs.put(flag, false);
 	}
 
 	public void parseArgs(String[] args) throws Exception {
@@ -29,9 +29,17 @@ public class ArgReader {
 					if (i + 1 < args.length && args[i + 1].charAt(0) != '-')
 						param = args[++i];
 					
-					argMap.get(arg).parse(param);
+					try {
+						argMap.get(arg).parse(param);
+					} catch (Exception e) {
+						System.out.print("Error: invalid argument parameters - ");
+						System.out.println(e.getMessage());
+						System.exit(-1);
+					}
+				
 					if (requiredArgs.containsKey(arg)) 
 						requiredArgs.replace(arg, true);
+
 				}
 
 			}
@@ -39,7 +47,7 @@ public class ArgReader {
 
 		Set<String> keys = requiredArgs.keySet();
 		for (String key: keys) 
-			if (!requiredArgs.get(key)) throw new Exception("Argument '" + key + "' required");
+			if (!requiredArgs.get(key)) throw new Exception("Error: Argument '" + key + "' required");
 
 	}
 	
