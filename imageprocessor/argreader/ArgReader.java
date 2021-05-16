@@ -1,4 +1,4 @@
-package argreader;
+package imageprocessor.argreader;
 
 import java.util.HashMap;
 import java.util.Set;

@@ -1,3 +1,5 @@
+package imageprocessor;
+
 public class RGB {
 
 	public int alpha;

@@ -1,28 +1,46 @@
+package imageprocessor;
+
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
-import argreader.ArgReader;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.Executors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import imageprocessor.threading.Manager;
+import imageprocessor.argreader.ArgReader;
 
 public class Printer {
 
-	private static final char backChar = '\b';
-	private static final char blockChar = '\u2588';
-	private static final String lineClear = "\033[F";
-	private static int scaledWidth = -1;
-	private static int scaledHeight = -1;
-	private static String path = null;
-	private static String outputPath = null;
-	private static boolean displayImage = true;
-	private static int colorFilter = -1;
+	public static final char backChar = '\b';
+	public static final char blockChar = '\u2588';
+	public static final String lineClear = "\033[F";
+
+	private int scaledWidth = -1;
+	private int scaledHeight = -1;
+	private String path = null;
+	private String outputPath = null;
+	private boolean displayImage = true;
+	private int colorFilter = -1;
+	private int threadCount = 1;
+	public boolean verbose = false;
 
 	public static void main(String[] args) {
+		Printer printer = new Printer();
+		parseArgs(printer, args);
+		printer.processImage();
+	}
+	
+	public static void parseArgs(Printer printer, String[] args) {
 
 		ArgReader reader = new ArgReader();
 
 		reader.addArg("w", false, (arg) -> {
 			if (arg == null) throw new Exception("'w' requires integer parameter ");
 			try {
-				scaledWidth = Integer.parseInt(arg);		
+				printer.scaledWidth = Integer.parseInt(arg);		
 			} catch (Exception e) {
 				throw new Exception("'w' requires integer parameter");
 			}
@@ -31,7 +49,7 @@ public class Printer {
 		reader.addArg("h", false, (arg) -> {
 			if (arg == null) throw new Exception("'h' requires integer parameter ");
 			try {
-				scaledHeight = Integer.parseInt(arg);		
+				printer.scaledHeight = Integer.parseInt(arg);		
 			} catch (Exception e) {
 				throw new Exception("'h' requires integer parameter");
 			}
@@ -39,35 +57,52 @@ public class Printer {
 
 		reader.addArg("p", true, (arg) -> {
 			if (arg == null) throw new Exception("'p' requires parameter ");
-			path = arg;
+			printer.path = arg;
 		});
 		
 		reader.addArg("o", false, (arg) -> {
 			if (arg == null) throw new Exception("'o' requires parameter ");
-			outputPath = arg;
+			printer.outputPath = arg;
 		});
 
 		reader.addArg("c", false, (arg) -> {
 			if (arg == null) throw new Exception("'c' requires either 6,8,256 as parameter");
 			try {
-				colorFilter = Integer.parseInt(arg);
-				if (colorFilter != 5 && colorFilter != 8 && colorFilter != 256)
+				printer.colorFilter = Integer.parseInt(arg);
+				if (printer.colorFilter != 5 && printer.colorFilter != 8 && printer.colorFilter != 256)
 					throw new Exception();
 			} catch (Exception e) {
 				throw new Exception("'c' requires either 5,8,256 as parameter");
 			}
 		});
 
-		reader.addArg("rgb", false, (arg) -> colorFilter = 6);
-		
+		reader.addArg("t", false, (arg) -> {
+			if (arg == null) throw new Exception("'t' requires positive integer parameter");
+			try {
+				printer.threadCount = Integer.parseInt(arg);
+				if (printer.threadCount < 1) 
+					throw new Exception(); 
+			} catch (Exception e) {
+				throw new Exception("'t' requires positive integer parameter"); 
+			}
+		});
+
+		reader.addArg("rgb", false, (arg) -> printer.colorFilter = 6);
+
+		reader.addArg("v", false, (arg) -> printer.verbose = true);
+
 		try {
 			reader.parseArgs(args);
 		} catch (Exception e) {
 			System.err.println(e.getMessage());
 			System.exit(-1);
 		}
+	}
 
-		System.out.println("Opening Image");
+
+	public void processImage() {
+
+		if (verbose) System.out.println("Opening Image");
 		BufferedImage image = null;
 		try {
 			image = ImageIO.read(new File(path));
@@ -77,26 +112,27 @@ public class Printer {
 		}
 	
 		if (scaledWidth != -1 && scaledHeight != -1) {
-			System.out.println("Scaling Image");
+			if (verbose) System.out.println("Scaling Image");
 			image = ImageScaler.scaleImage(image, scaledWidth, scaledHeight);
 		}
 
 		if (colorFilter != -1) {
-			System.out.println("Applying Color Filter");
+			if (verbose) System.out.println("Applying Color Filter");
 			applyColorFilter(image);
 		}
 
 		if (outputPath != null) {
-			System.out.println("Saving Image");
+			if (verbose) System.out.println("Saving Image");
 			saveImage(image);
 		}
 
-		System.out.println("Converting Image to Text");
-		System.out.println(imageToString(image));
+		if (verbose) System.out.println("Converting Image to Text");
+		String s = imageToString(image);
+		System.out.println(s);
 
 	}
 
-	public static void saveImage(BufferedImage image) {
+	public void saveImage(BufferedImage image) {
 		try {
 			ImageIO.write(image, "jpg", new File(outputPath));
 		} catch (Exception e) {
@@ -104,7 +140,7 @@ public class Printer {
 		}
 	}
 
-	public static void applyColorFilter(BufferedImage image) {
+	public void applyColorFilter(BufferedImage image) {
 
 		for (int x = 0; x < image.getWidth(); x++) {
 			for (int y = 0; y < image.getHeight(); y++) {
@@ -124,10 +160,9 @@ public class Printer {
 
 	}
 
-	public static String imageToString(BufferedImage image) {
-		
-		String imageString = "";
+	public String imageToString(BufferedImage image) {
 
+		String imageString = "";
 		image = ImageScaler.scaleImage(image, image.getWidth(), image.getHeight() / 2);
 
 		int columns = image.getWidth();
@@ -136,29 +171,20 @@ public class Printer {
 						image.getWidth() - 1, image.getHeight() - 1,
 						null, 0, image.getWidth() - 1);
 		
-		System.out.println("0%");
-		for (int c = 0; c < imgColors.length; c++) {
-			if (c % (columns - 1) == 0) imageString += '\n';
-			
-			RGB pixelColor = new RGB(imgColors[c]);
-
-			int index = color256(pixelColor);			
-			imageString += "\u001b[38;5;" + index + "m";
-			imageString += blockChar;
-
-			float progress = (float) c / imgColors.length * 100;
-			if (progress - (int) progress <= 0.5) {
-				System.out.print(lineClear);
-				System.out.println(c + "/" + imgColors.length + " | " + (int) progress + "%");
-			}
+		long startTime = System.nanoTime();
+		Manager manager = new Manager(imgColors, threadCount);
+		String[] results = manager.getResult();
+		for (int i = 0; i < results.length; i++) {
+			if (i % (columns - 1) == 0) imageString += '\n';
+			imageString += results[i];
 		}
-		imageString += '\n';
-
+		long endTime = System.nanoTime();
+		
 		return imageString;
 	
 	}
 
-	public static void color5(RGB color) {
+	public void color5(RGB color) {
 		
 		if (color.red - color.blue < 10 && color.red - color.green < 10) {
 
@@ -190,7 +216,7 @@ public class Printer {
 
 	}
 
-	public static void color8(RGB color) {
+	public void color8(RGB color) {
 		
 		if (color.red > (255/2))
 			color.red = 255;

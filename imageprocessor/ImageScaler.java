@@ -1,3 +1,5 @@
+package imageprocessor;
+
 import java.awt.image.BufferedImage;
 import java.lang.Math;
 import java.util.Arrays;
