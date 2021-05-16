@@ -128,7 +128,7 @@ public class Printer {
 
 		if (verbose) System.out.println("Converting Image to Text");
 		String s = imageToString(image);
-		System.out.println(s);
+		if (displayImage) System.out.println(s);
 
 	}
 
@@ -167,18 +167,17 @@ public class Printer {
 
 		int columns = image.getWidth();
 	
+		// wrong size, doesn't get all pixels
 		int[] imgColors = image.getRGB(0, 0,
 						image.getWidth() - 1, image.getHeight() - 1,
 						null, 0, image.getWidth() - 1);
 		
 		long startTime = System.nanoTime();
-		Manager manager = new Manager(imgColors, threadCount);
-		String[] results = manager.getResult();
-		for (int i = 0; i < results.length; i++) {
-			if (i % (columns - 1) == 0) imageString += '\n';
-			imageString += results[i];
-		}
+		Manager manager = new Manager(imgColors, threadCount, columns);
+		for (String line: manager.getResult())
+				imageString += line;
 		long endTime = System.nanoTime();
+		if (verbose) System.out.println("Elapsed (ms) : " + ((endTime - startTime) / 1000000)); 
 		
 		return imageString;
 	
