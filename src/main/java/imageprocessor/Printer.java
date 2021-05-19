@@ -87,6 +87,8 @@ public class Printer {
 			}
 		});
 
+		reader.addArg("q", false, (arg) -> printer.displayImage = false); 
+
 		reader.addArg("rgb", false, (arg) -> printer.colorFilter = 6);
 
 		reader.addArg("v", false, (arg) -> printer.verbose = true);

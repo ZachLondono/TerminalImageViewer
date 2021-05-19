@@ -23,7 +23,7 @@ public class ImageScaler {
 		// width / height of each sector in the original image
 		int sectorWidth = width / sectorsWide; 
 		int sectorHeight = height / sectorsHigh;
-
+		
 		// Instance of the new scaled image
 		BufferedImage scaledImg = new BufferedImage(scaledWidth, scaledHeight, 
 													BufferedImage.TYPE_INT_RGB);
