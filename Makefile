@@ -1,23 +1,12 @@
-mainClass = imageprocessor/Printer
-buildDir = build
-testDir = tests
-
 
 all:
-	javac $(mainClass).java -d $(buildDir)
+	mvn package
 
 run:
-	(cd $(buildDir) && java $(mainClass) -p "../resources/zach.jpg" -w 80 -h 80 -t 5 -v -o "../resources/scaled.jpg" )
+	java -cp target/image-proc-1.0.0.jar imageprocessor.Printer -p src/test/resources/apple.jpeg -w 300 -h 300 -q -t 6
+	java -cp target/image-proc-1.0.0.jar imageprocessor.Printer -p src/test/resources/zach.jpg -w 300 -h 300 -q -t 6 
+	java -cp target/image-proc-1.0.0.jar imageprocessor.Printer -p src/test/resources/Banana-Single.jpg -w 300 -h 300 -q -t 6 
+	java -cp target/image-proc-1.0.0.jar imageprocessor.Printer -p src/test/resources/ball.jpg -w 300 -h 300 -q -t 6
+	java -cp target/image-proc-1.0.0.jar imageprocessor.Printer -p src/test/resources/guysmiling_cropped.jpg -w 300 -h 300 -q -t 6
+	java -cp target/image-proc-1.0.0.jar imageprocessor.Printer -p src/test/resources/zach.jpg -q -t 6
 
-run2:
-	(cd $(buildDir) && java $(mainClass) -p "../resources/scaled.jpg")
-
-open:
-	gio open output.jpg
-
-test:
-	javac $(testDir)/Tester.java -d $(buildDir)
-	(cd $(buildDir) && java Tester)
-
-clean:
-	(cd $(buildDir) && rm -rf $(buildDir)/*)
