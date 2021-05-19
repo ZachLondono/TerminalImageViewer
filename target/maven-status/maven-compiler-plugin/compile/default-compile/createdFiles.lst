@@ -1,0 +1,7 @@
+imageprocessor/threading/Worker.class
+imageprocessor/ImageScaler.class
+imageprocessor/threading/Manager.class
+imageprocessor/RGB.class
+imageprocessor/Printer.class
+imageprocessor/argreader/ArgReader.class
+imageprocessor/argreader/ArgFunction.class
